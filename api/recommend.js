@@ -93,38 +93,36 @@ Return ONLY a valid JSON array of 6 objects. Do not include markdown code blocks
     }
 
     if (TMDB_API_KEY) {
-      await Promise.all(
-        movies.map(async (movie) => {
-          try {
-            const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(movie.title)}&primary_release_year=${movie.year}`);
-            const tmdbData = await searchRes.json();
-            
-            if (tmdbData.results && tmdbData.results.length > 0) {
-              const topResult = tmdbData.results[0];
-              if (topResult.poster_path) {
-                movie.posterUrl = `https://image.tmdb.org/t/p/w500${topResult.poster_path}`;
-              }
-
-              const detailsRes = await fetch(`https://api.themoviedb.org/3/movie/${topResult.id}?api_key=${TMDB_API_KEY}&append_to_response=videos,watch/providers`);
-              const detailsData = await detailsRes.json();
-
-              if (detailsData.videos?.results) {
-                const trailer = detailsData.videos.results.find((v) => v.type === "Trailer" && v.site === "YouTube");
-                if (trailer) movie.trailerKey = trailer.key;
-              }
-
-              if (detailsData["watch/providers"]?.results?.US?.flatrate) {
-                movie.providers = detailsData["watch/providers"].results.US.flatrate.slice(0, 3).map((p) => ({
-                  name: p.provider_name,
-                  logo: `https://image.tmdb.org/t/p/w200${p.logo_path}`
-                }));
-              }
+      for (const movie of movies) {
+        try {
+          const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(movie.title)}&primary_release_year=${movie.year}`);
+          const tmdbData = await searchRes.json();
+          
+          if (tmdbData.results && tmdbData.results.length > 0) {
+            const topResult = tmdbData.results[0];
+            if (topResult.poster_path) {
+              movie.posterUrl = `https://image.tmdb.org/t/p/w500${topResult.poster_path}`;
             }
-          } catch (e) {
-            console.error("TMDB Fetch Error for", movie.title, e);
+
+            const detailsRes = await fetch(`https://api.themoviedb.org/3/movie/${topResult.id}?api_key=${TMDB_API_KEY}&append_to_response=videos,watch/providers`);
+            const detailsData = await detailsRes.json();
+
+            if (detailsData.videos?.results) {
+              const trailer = detailsData.videos.results.find((v) => v.type === "Trailer" && v.site === "YouTube");
+              if (trailer) movie.trailerKey = trailer.key;
+            }
+
+            if (detailsData["watch/providers"]?.results?.US?.flatrate) {
+              movie.providers = detailsData["watch/providers"].results.US.flatrate.slice(0, 3).map((p) => ({
+                name: p.provider_name,
+                logo: `https://image.tmdb.org/t/p/w200${p.logo_path}`
+              }));
+            }
           }
-        })
-      );
+        } catch (e) {
+          console.error("TMDB Fetch Error for", movie.title, e);
+        }
+      }
     }
 
     res.json(movies);

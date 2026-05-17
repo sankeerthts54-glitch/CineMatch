@@ -76,8 +76,15 @@ export async function searchMovies(query) {
   } catch (err) {
     console.warn("Backend API failed:", err.message);
 
-    // Re-throw rate-limit errors so the UI can show the specific "Please wait" message
-    if (err.message.includes("401") || err.message.includes("429") || err.message.includes("Rate limited")) {
+    // Re-throw errors that should be shown to the user instead of falling back silently
+    if (
+      err.message.includes("401") ||
+      err.message.includes("429") ||
+      err.message.includes("400") ||
+      err.message.includes("403") ||
+      err.message.includes("Rate limited") ||
+      err.message.includes("not configured")
+    ) {
       throw err;
     }
   }
