@@ -93,10 +93,26 @@ Return ONLY a valid JSON array of 6 objects. Do not include markdown code blocks
     }
 
     if (TMDB_API_KEY) {
+      const fetchWithRetry = async (url, retries = 2) => {
+        for (let i = 0; i <= retries; i++) {
+          try {
+            const res = await fetch(url);
+            if (res.ok) return await res.json();
+          } catch (err) {
+            if (i === retries) throw err;
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+      };
+
       for (const movie of movies) {
         try {
-          const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(movie.title)}&primary_release_year=${movie.year}`);
-          const tmdbData = await searchRes.json();
+          let tmdbData = await fetchWithRetry(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(movie.title)}&primary_release_year=${movie.year}`);
+          
+          if (!tmdbData || !tmdbData.results || tmdbData.results.length === 0) {
+            // Fallback: search without strict year, as AI years often differ from TMDB by 1 year (premiere vs release)
+            tmdbData = await fetchWithRetry(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(movie.title)}`);
+          }
           
           if (tmdbData.results && tmdbData.results.length > 0) {
             const topResult = tmdbData.results[0];
@@ -104,8 +120,7 @@ Return ONLY a valid JSON array of 6 objects. Do not include markdown code blocks
               movie.posterUrl = `https://image.tmdb.org/t/p/w500${topResult.poster_path}`;
             }
 
-            const detailsRes = await fetch(`https://api.themoviedb.org/3/movie/${topResult.id}?api_key=${TMDB_API_KEY}&append_to_response=videos,watch/providers`);
-            const detailsData = await detailsRes.json();
+            const detailsData = await fetchWithRetry(`https://api.themoviedb.org/3/movie/${topResult.id}?api_key=${TMDB_API_KEY}&append_to_response=videos,watch/providers`);
 
             if (detailsData.videos?.results) {
               const trailer = detailsData.videos.results.find((v) => v.type === "Trailer" && v.site === "YouTube");
