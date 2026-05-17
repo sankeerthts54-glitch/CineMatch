@@ -1,24 +1,28 @@
----
-title: Cinematch
-emoji: 🍿
-colorFrom: indigo
-colorTo: purple
-sdk: docker
-app_port: 7860
----
-# React + Vite
+# CineMatch
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+CineMatch is a premium movie recommendation application that uses the Gemini API to suggest films based on natural language input, and the TMDB API to enrich those recommendations with beautiful posters, trailers, and streaming provider data.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **AI-Powered Recommendations:** Powered by Google's Gemini.
+- **Dynamic Cinematic UI:** High-contrast, premium dark mode.
+- **Rich Metadata:** Real-time posters and streaming links via TMDB.
+- **Secure Backend:** Full-stack architecture protecting API keys using Vercel Serverless Functions.
 
-## React Compiler
+## Local Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Run `npm install`
+2. Create a `.env` file with `VITE_GEMINI_API_KEY` and `VITE_TMDB_API_KEY`.
+3. Run `npm run dev` to start both the Vite frontend and the proxy server.
 
-## Expanding the ESLint configuration
+## Vercel Deployment
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+This project is fully configured for deployment on **Vercel** using Serverless Functions.
+
+1. Push your code to GitHub.
+2. Log into [Vercel](https://vercel.com) and click **Add New Project**.
+3. Import this repository. Vercel will automatically detect the Vite React framework.
+4. Open the **Environment Variables** section and add:
+   - `VITE_GEMINI_API_KEY`
+   - `VITE_TMDB_API_KEY`
+5. Click **Deploy**. Vercel will automatically use `api/index.js` for the backend and serve the React frontend globally.
