@@ -19,6 +19,21 @@ app.use(express.json());
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 const TMDB_API_KEY = process.env.VITE_TMDB_API_KEY || process.env.TMDB_API_KEY;
 
+// Robust fetch helper with retry mechanism
+async function fetchWithRetry(url, options = {}, retries = 3, delay = 200) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url, options);
+      if (!res.ok) throw new Error(`HTTP status ${res.status}`);
+      return res;
+    } catch (e) {
+      if (i === retries - 1) throw e;
+      console.warn(`Fetch failed (attempt ${i + 1}/${retries}) for ${url}:`, e.message);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+}
+
 // API: Autocomplete
 app.get('/api/autocomplete', async (req, res) => {
   try {
@@ -26,7 +41,7 @@ app.get('/api/autocomplete', async (req, res) => {
     if (!query) return res.json({ results: [] });
     if (!TMDB_API_KEY) return res.json({ results: [] }); // Graceful fallback
 
-    const tmdbRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false&page=1`);
+    const tmdbRes = await fetchWithRetry(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false&page=1`);
     const data = await tmdbRes.json();
     res.json(data);
   } catch (error) {
@@ -89,15 +104,15 @@ Return ONLY a valid JSON array of 6 objects. Do not include markdown code blocks
         }
       } catch (e) {
         console.warn("Gemini fetch failed:", e.message);
-        if (isRateLimited) {
-           return res.status(429).json({ error: "Rate limited" });
-        }
-        // Fallback to mock data if Gemini fails
+        // Fallback to mock data if Gemini fails (including rate limit!)
         const lowerQuery = query.toLowerCase();
         if (mockDb[lowerQuery]) {
            // Deep copy so we don't mutate the original mockDb
            movies = JSON.parse(JSON.stringify(mockDb[lowerQuery]));
         } else {
+           if (isRateLimited) {
+              return res.status(429).json({ error: "Rate limited" });
+           }
            return res.status(500).json({ error: e.message || "Failed to fetch recommendations" });
         }
       }
@@ -112,38 +127,36 @@ Return ONLY a valid JSON array of 6 objects. Do not include markdown code blocks
     }
 
     if (TMDB_API_KEY) {
-      await Promise.all(
-        movies.map(async (movie) => {
-          try {
-            const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(movie.title)}&primary_release_year=${movie.year}`);
-            const tmdbData = await searchRes.json();
-            
-            if (tmdbData.results && tmdbData.results.length > 0) {
-              const topResult = tmdbData.results[0];
-              if (topResult.poster_path) {
-                movie.posterUrl = `https://image.tmdb.org/t/p/w500${topResult.poster_path}`;
-              }
-
-              const detailsRes = await fetch(`https://api.themoviedb.org/3/movie/${topResult.id}?api_key=${TMDB_API_KEY}&append_to_response=videos,watch/providers`);
-              const detailsData = await detailsRes.json();
-
-              if (detailsData.videos?.results) {
-                const trailer = detailsData.videos.results.find((v) => v.type === "Trailer" && v.site === "YouTube");
-                if (trailer) movie.trailerKey = trailer.key;
-              }
-
-              if (detailsData["watch/providers"]?.results?.US?.flatrate) {
-                movie.providers = detailsData["watch/providers"].results.US.flatrate.slice(0, 3).map((p) => ({
-                  name: p.provider_name,
-                  logo: `https://image.tmdb.org/t/p/w200${p.logo_path}`
-                }));
-              }
+      for (const movie of movies) {
+        try {
+          const searchRes = await fetchWithRetry(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(movie.title)}&primary_release_year=${movie.year}`);
+          const tmdbData = await searchRes.json();
+          
+          if (tmdbData.results && tmdbData.results.length > 0) {
+            const topResult = tmdbData.results[0];
+            if (topResult.poster_path) {
+              movie.posterUrl = `https://image.tmdb.org/t/p/w500${topResult.poster_path}`;
             }
-          } catch (e) {
-            console.error("TMDB Fetch Error for", movie.title, e);
+
+            const detailsRes = await fetchWithRetry(`https://api.themoviedb.org/3/movie/${topResult.id}?api_key=${TMDB_API_KEY}&append_to_response=videos,watch/providers`);
+            const detailsData = await detailsRes.json();
+
+            if (detailsData.videos?.results) {
+              const trailer = detailsData.videos.results.find((v) => v.type === "Trailer" && v.site === "YouTube");
+              if (trailer) movie.trailerKey = trailer.key;
+            }
+
+            if (detailsData["watch/providers"]?.results?.US?.flatrate) {
+              movie.providers = detailsData["watch/providers"].results.US.flatrate.slice(0, 3).map((p) => ({
+                name: p.provider_name,
+                logo: `https://image.tmdb.org/t/p/w200${p.logo_path}`
+              }));
+            }
           }
-        })
-      );
+        } catch (e) {
+          console.error("TMDB Fetch Error for", movie.title, e);
+        }
+      }
     }
 
     res.json(movies);
