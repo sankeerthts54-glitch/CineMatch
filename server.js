@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import mockDb from './src/data/mockDb.js';
 
 dotenv.config();
 
@@ -39,9 +40,12 @@ app.post('/api/recommend', async (req, res) => {
   try {
     const { query } = req.body;
     if (!query) return res.status(400).json({ error: "Query is required" });
-    if (!GEMINI_API_KEY) return res.status(500).json({ error: "Gemini API key not configured on server" });
+    let movies = [];
+    let isRateLimited = false;
 
-    const prompt = `You are a movie recommendation engine. The user enjoyed the movie "${query}". 
+    if (GEMINI_API_KEY) {
+      try {
+        const prompt = `You are a movie recommendation engine. The user enjoyed the movie "${query}". 
 Suggest exactly 6 similar movies they would love. For EACH movie, return a JSON object with these exact fields:
 - id (number, 1 through 6)
 - title (string, the movie title)
@@ -56,32 +60,55 @@ Suggest exactly 6 similar movies they would love. For EACH movie, return a JSON 
 
 Return ONLY a valid JSON array of 6 objects. Do not include markdown code blocks or any other text.`;
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
-    
-    const geminiRes = await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: "application/json" }
-      }),
-    });
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+        
+        const geminiRes = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          }),
+        });
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text().catch(() => "");
-      return res.status(geminiRes.status).json({ error: errText });
-    }
+        if (!geminiRes.ok) {
+          if (geminiRes.status === 429) isRateLimited = true;
+          throw new Error(`Gemini status ${geminiRes.status}`);
+        }
 
-    const data = await geminiRes.json();
-    const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!textContent) throw new Error("No text content in API response");
+        const data = await geminiRes.json();
+        const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!textContent) throw new Error("No text content in API response");
 
-    let raw = textContent.trim();
-    raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-    const movies = JSON.parse(raw);
+        let raw = textContent.trim();
+        raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+        movies = JSON.parse(raw);
 
-    if (!Array.isArray(movies) || movies.length === 0) {
-      throw new Error("API returned invalid movie data");
+        if (!Array.isArray(movies) || movies.length === 0) {
+          throw new Error("API returned invalid movie data");
+        }
+      } catch (e) {
+        console.warn("Gemini fetch failed:", e.message);
+        if (isRateLimited) {
+           return res.status(429).json({ error: "Rate limited" });
+        }
+        // Fallback to mock data if Gemini fails
+        const lowerQuery = query.toLowerCase();
+        if (mockDb[lowerQuery]) {
+           // Deep copy so we don't mutate the original mockDb
+           movies = JSON.parse(JSON.stringify(mockDb[lowerQuery]));
+        } else {
+           return res.status(500).json({ error: e.message || "Failed to fetch recommendations" });
+        }
+      }
+    } else {
+      // If no key, fallback to mock data immediately
+      const lowerQuery = query.toLowerCase();
+      if (mockDb[lowerQuery]) {
+         movies = JSON.parse(JSON.stringify(mockDb[lowerQuery]));
+      } else {
+         return res.status(500).json({ error: "Gemini API key not configured on server" });
+      }
     }
 
     if (TMDB_API_KEY) {
