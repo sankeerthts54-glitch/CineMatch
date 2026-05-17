@@ -1,3 +1,4 @@
+/* eslint-env node */
 import express from 'express';
 import path from 'path';
 import cors from 'cors';

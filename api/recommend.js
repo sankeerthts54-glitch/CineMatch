@@ -1,3 +1,4 @@
+/* eslint-env node */
 import dotenv from 'dotenv';
 import mockDb from '../src/data/mockDb.js';
 
