@@ -74,10 +74,10 @@ export async function searchMovies(query) {
     const apiResults = await fetchFromBackend(query);
     return apiResults;
   } catch (err) {
-    console.warn("Backend API failed, falling back to mock DB:", err.message);
+    console.warn("Backend API failed:", err.message);
 
-    // Re-throw auth/rate-limit errors so the UI can show specific messages
-    if (err.message.includes("401") || err.message.includes("429")) {
+    // Re-throw rate-limit errors so the UI can show the specific "Please wait" message
+    if (err.message.includes("401") || err.message.includes("429") || err.message.includes("Rate limited")) {
       throw err;
     }
   }
