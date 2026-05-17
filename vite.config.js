@@ -6,6 +6,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      '/api': {
+        target: 'http://localhost:7860',
+        changeOrigin: true
+      },
       '/api/anthropic': {
         target: 'https://api.anthropic.com',
         changeOrigin: true,

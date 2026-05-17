@@ -13,10 +13,8 @@ function SearchBar({ onSearch, loading }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
-  const tmdbKey = import.meta.env.VITE_TMDB_API_KEY;
-
   useEffect(() => {
-    if (!inputValue.trim() || inputValue.trim().length < 2 || !tmdbKey) {
+    if (!inputValue.trim() || inputValue.trim().length < 2) {
       setAutocompleteResults([]);
       setIsTyping(false);
       return;
@@ -25,7 +23,7 @@ function SearchBar({ onSearch, loading }) {
     setIsTyping(true);
     const delayDebounceFn = setTimeout(async () => {
       try {
-        const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbKey}&query=${encodeURIComponent(inputValue.trim())}&include_adult=false&page=1`);
+        const res = await fetch(`/api/autocomplete?q=${encodeURIComponent(inputValue.trim())}`);
         const data = await res.json();
         if (data.results) {
           setAutocompleteResults(data.results.slice(0, 5));
@@ -38,7 +36,7 @@ function SearchBar({ onSearch, loading }) {
     }, 350);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [inputValue, tmdbKey]);
+  }, [inputValue]);
 
   useEffect(() => {
     function handleClickOutside(e) {
