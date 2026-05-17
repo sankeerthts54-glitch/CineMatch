@@ -1,38 +1,24 @@
-import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
 import mockDb from '../src/data/mockDb.js';
 
 dotenv.config();
 
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 const TMDB_API_KEY = process.env.VITE_TMDB_API_KEY || process.env.TMDB_API_KEY;
 
-// API: Autocomplete
-app.get('/api/autocomplete', async (req, res) => {
-  try {
-    const query = req.query.q;
-    if (!query) return res.json({ results: [] });
-    if (!TMDB_API_KEY) return res.json({ results: [] }); // Graceful fallback
-
-    const tmdbRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false&page=1`);
-    const data = await tmdbRes.json();
-    res.json(data);
-  } catch (error) {
-    console.error("Autocomplete Error:", error);
-    res.status(500).json({ error: error.message });
+export default async function handler(req, res) {
+  // CORS headers for Vercel
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
-});
 
-// API: Recommend
-app.post('/api/recommend', async (req, res) => {
   try {
-    const { query } = req.body;
+    const { query } = req.body || {};
     if (!query) return res.status(400).json({ error: "Query is required" });
     let movies = [];
     let isRateLimited = false;
@@ -145,6 +131,4 @@ Return ONLY a valid JSON array of 6 objects. Do not include markdown code blocks
     console.error("Recommend Error:", error);
     res.status(500).json({ error: error.message });
   }
-});
-
-export default app;
+}
