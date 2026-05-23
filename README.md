@@ -13,7 +13,6 @@ pinned: false
 
 **AI-powered movie recommendations, beautifully presented.**
 
-[![Live Demo](https://img.shields.io/badge/▲%20Vercel-Live%20Demo-black?style=for-the-badge&logo=vercel)](https://cinematch-lime.vercel.app)
 [![HF Space](https://img.shields.io/badge/🤗%20Hugging%20Face-Space-yellow?style=for-the-badge)](https://huggingface.co/spaces/Vader26/cinematch)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/sankeerthts54-glitch/CineMatch)
 
@@ -35,12 +34,9 @@ No generic suggestions. No endless scrolling. Just smart, personalized picks.
 
 ---
 
-## 🚀 Live Deployments
+## 🚀 Live Demo
 
-| Platform | URL |
-|---|---|
-| ▲ **Vercel** | [cinematch-lime.vercel.app](https://cinematch-lime.vercel.app) |
-| 🤗 **Hugging Face Spaces** | [huggingface.co/spaces/Vader26/cinematch](https://huggingface.co/spaces/Vader26/cinematch) |
+🤗 **Hugging Face Spaces** → [huggingface.co/spaces/Vader26/cinematch](https://huggingface.co/spaces/Vader26/cinematch)
 
 ---
 
@@ -138,15 +134,6 @@ This starts both the Vite frontend and the Express proxy server concurrently.
 ---
 
 ## ☁️ Deployment
-
-### Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Import the repo at [vercel.com/new](https://vercel.com/new)
-3. Add environment variables:
-   - `VITE_GEMINI_API_KEY`
-   - `VITE_TMDB_API_KEY`
-4. Deploy — Vercel auto-detects Vite and uses `/api` as serverless functions
 
 ### Hugging Face Spaces (Docker)
 
