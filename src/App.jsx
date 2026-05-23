@@ -2,21 +2,21 @@
 import { useState } from "react";
 import "./App.css";
 
-import Header       from "./components/Header";
-import SearchBar    from "./components/SearchBar";
-import GenreFilter  from "./components/GenreFilter";
-import MovieCard    from "./components/MovieCard";
-import Footer       from "./components/Footer";
-import LoadingGrid  from "./components/LoadingGrid";
+import Header from "./components/Header";
+import SearchBar from "./components/SearchBar";
+import GenreFilter from "./components/GenreFilter";
+import MovieCard from "./components/MovieCard";
+import Footer from "./components/Footer";
+import LoadingGrid from "./components/LoadingGrid";
 import { GradientDots } from "./components/GradientDots";
 import TrailerModal from "./components/TrailerModal";
 
 import { searchMovies, ALL_GENRES } from "./data/movies";
 
 function App() {
-  const [movies, setMovies]           = useState([]);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState("");
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeGenre, setActiveGenre] = useState("All");
   const [hasSearched, setHasSearched] = useState(false);
@@ -133,7 +133,7 @@ function App() {
             <div className="empty-state">
               <span className="empty-state__icon">🎬</span>
               <p className="empty-state__text">
-                Type any movie to get AI-powered recommendations
+                Type any movie to get recommendations based on genres, directors and similar rating and reviews
               </p>
             </div>
           )}

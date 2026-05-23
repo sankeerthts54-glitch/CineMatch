@@ -3,7 +3,7 @@
 function Footer() {
   return (
     <footer className="footer">
-      <p>CineMatch — CIA-3 Project &nbsp;|&nbsp; Powered by Claude AI &nbsp;|&nbsp; React + Vite</p>
+      <p>CineMatch &nbsp;|&nbsp; Discover Your Next Watch &nbsp;</p>
     </footer>
   );
 }

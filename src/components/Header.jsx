@@ -9,7 +9,7 @@ function Header() {
           <span>CineMatch</span>
         </h1>
         <p className="header__subtitle">
-          Type any movie and get 6 AI-powered recommendations matched by genre, tone, and style.
+          Type any movie and get 6 recommendations matched by genre, tone, and style.
         </p>
         <div className="header__line">
           <div className="header__line-dot" />
